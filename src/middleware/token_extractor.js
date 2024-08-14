@@ -8,7 +8,7 @@ module.exports = (req, res, next) => {
             req.token = bearertoken;
             next();
         } catch (error) {
-            return res.status(401).json({
+            return res.status(401).json({ 
                 "error": "true",
                 "mensaje": "Acceso denegado"
             });
