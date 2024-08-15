@@ -1,125 +1,137 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const producto = require("../model/model_producto")
 const proveedor = require("../model/model_proveedor")
 const database = require('../database')
-const verificaToken = require('../middleware/token_extractor')
+const { keycloak } = require('../middleware/keycloak_validate');
 require("dotenv").config()
 let fechaActual = new Date();
 
-routes.get('/get/', verificaToken, async (req, res) => {
-
-    try {
-        const productos = await producto.findAll({ include: proveedor })
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: productos
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
-    }
+routes.get('/get/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await producto.findAll({ include: proveedor }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 
 })
 
-routes.get('/get/:idproducto', verificaToken, async (req, res) => {
-    const productos = await producto.findByPk(req.params.idproducto, { include: proveedor })
-    jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-        if (error) {
-            res.json({ estado: 'error', mensjae: error });
-        } else {
+routes.get('/get/:idproducto', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await producto.findByPk(req.params.idproducto, { include: proveedor })
+        .then((response) => {
             res.json({
-                estado: "successfully",
-                body: productos
-            })
-        }
-    })
+                mensaje: "successfully",
+                authData: authData,
+                body: response
+            });
+        }).catch(error => {
+            res.json({
+                mensaje: "error",
+                error: error,
+                detmensaje: `Error en el servidor, ${error}`
+            });
+        });
 })
 
-routes.post('/post/', verificaToken, async (req, res) => {
-    console.log('Entra en producto------------------------------------------')
+routes.post('/post/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    //console.log('Entra en producto------------------------------------------')
     const t = await database.transaction();
     try {
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
-                req.body.fecha_insert = strFecha;
-                req.body.fecha_upd = strFecha;
-                req.body.idusuario_upd = authData?.rsusuario?.idusuario;
-                const productos = await producto.create(req.body)
-                await database.query('CALL cargaInventarioCab(@a)');
-                t.commit();
-                res.json({
-                    estado: "successfully",
-                    mensaje: "Registro almacenado",
-                    body: productos
-                })
-            }
+
+        const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
+        req.body.fecha_insert = strFecha;
+        req.body.fecha_upd = strFecha;
+        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+
+        await producto.create(req.body, {
+            transaction: t
         })
+            .then(async response => {
+                t.commit();
+                await database.query('CALL cargaInventarioCab(@a)');
+                res.json({
+                    mensaje: "successfully",
+                    detmensaje: "Registro almacenado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
-        return res.json({ estado: "error", mensaje: error })
     }
 
 })
 
-routes.put('/put/:idproducto', verificaToken, async (req, res) => {
-
+routes.put('/put/:idproducto', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     //console.log(req.body)
     try {
-
         const t = await database.transaction();
 
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
-                req.body.fecha_upd = strFecha;
-                req.body.idusuario_upd = authData?.rsusuario?.idusuario;
-                const productos = await producto.update(req.body, { where: { idproducto: req.params.idproducto }, transaction: t })
+        const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
+        req.body.fecha_upd = strFecha;
+        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        await producto.update(req.body, { where: { idproducto: req.params.idproducto }, transaction: t })
+            .then(response => {
                 t.commit();
                 res.json({
-                    estado: "successfully",
-                    mensaje: "Registro actualizado",
-                    body: productos
-                })
-            }
-        })
+                    mensaje: "successfully",
+                    detmensaje: "Registro actualizado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error })
-        //t.rollback();
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+        t.rollback();
     }
-
 })
 
-routes.delete('/del/:idproducto', verificaToken, async (req, res) => {
+routes.delete('/del/:idproducto', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     try {
-        const productos = await producto.destroy({ where: { idproducto: req.params.idproducto }, transaction: t })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
+        await producto.destroy({ where: { idproducto: req.params.idproducto }, transaction: t })
+            .then(response => {
+                t.commit();
                 res.json({
-                    estado: "successfully",
-                    mensaje: "Registro eliminado",
-                    body: productos
-                })
-            }
-        })
+                    mensaje: "successfully",
+                    detmensaje: "Registro eliminado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error })
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
     }
 
