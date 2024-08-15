@@ -1,212 +1,211 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const producto_final = require("../model/model_producto_final")
 const receta = require("../model/model_receta")
 const database = require('../database')
 const { QueryTypes } = require("sequelize")
-const verificaToken = require('../middleware/token_extractor');
+const { keycloak } = require('../middleware/keycloak_validate');
 const producto = require('../model/model_producto');
 require("dotenv").config()
 
-
-routes.get('/getsql/', verificaToken, async (req, res) => {
-    try {
-        const productos_finales = await database.query(`select * from producto_final where estado='AC'`, { type: QueryTypes.SELECT })
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: productos_finales
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
-    }
-});
-
-routes.get('/productoventa/', verificaToken, async (req, res) => {
-    try {
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                const idsucursal = authData?.rsusuario?.idsucursal;
-                const productos_finales = await database.query(`select * from vw_venta_prod_stock where estado ='AC' and idsucursal=${idsucursal} `,
-                    {
-                        model: producto_final,
-                        mapToModel: true // pass true here if you have any mapped fields
-                    }
-                    , { type: QueryTypes.SELECT });
-                res.json({
-                    estado: "successfully",
-                    body: productos_finales
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
-    }
-});
-
-routes.get('/get/', verificaToken, async (req, res) => {
-
-    try {
-        const productos_finales = await producto_final.findAll({
-            include: [
-                {
-                    model: receta, include: [
-                        { model: producto },
-                    ]
-                },
-            ]
-        });
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });;
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: productos_finales
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
-    }
-})
-
-routes.get('/get/:idproducto_final', verificaToken, async (req, res) => {
-    const productos_finales = await producto_final.findByPk(req.params.idproducto_final)
-    jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-        if (error) {
-            res.json({ estado: 'error', mensjae: error });;
-        } else {
-
+routes.get('/getsql/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await database.query(`select * from producto_final where estado='AC'`, { type: QueryTypes.SELECT })
+        .then((response) => {
             res.json({
-                estado: "successfully",
-                body: productos_finales
+                mensaje: "successfully",
+                authData: authData,
+                body: response
             });
-        }
-    })
+        }).catch(error => {
+            res.json({
+                mensaje: "error",
+                error: error,
+                detmensaje: `Error en el servidor, ${error}`
+            });
+        });
+});
+
+routes.get('/productoventa/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+
+    const idsucursal = authData?.rsusuario?.idsucursal;
+    await database.query(`select * from vw_venta_prod_stock where estado ='AC' and idsucursal=${idsucursal} `,
+        {
+            model: producto_final,
+            mapToModel: true
+        }, { type: QueryTypes.SELECT })
+        .then((response) => {
+            res.json({
+                mensaje: "successfully",
+                authData: authData,
+                body: response
+            });
+        }).catch(error => {
+            res.json({
+                mensaje: "error",
+                error: error,
+                detmensaje: `Error en el servidor, ${error}`
+            });
+        });
+});
+
+routes.get('/get/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+
+    await producto_final.findAll({
+        include: [
+            {
+                model: receta, include: [
+                    { model: producto },
+                ]
+            },
+        ]
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 })
 
-routes.post('/post/', verificaToken, async (req, res) => {
-    const t = await database.transaction();
-    console.log('Entra en prod final -----------------------------------------------')
-    try {
-        const productos_finales = await producto_final.create(req.body, {
-            transaction: t
+routes.get('/get/:idproducto_final', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await producto_final.findByPk(req.params.idproducto_final)
+        .then((response) => {
+            res.json({
+                mensaje: "successfully",
+                authData: authData,
+                body: response
+            });
+        }).catch(error => {
+            res.json({
+                mensaje: "error",
+                error: error,
+                detmensaje: `Error en el servidor, ${error}`
+            });
         });
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
-                t.commit();
-                //console.log('Commitea')
-                res.json({
-                    estado: "successfully",
-                    mensaje: "Registro almacenado",
-                    body: productos_finales
-                })
-            }
-        })
+})
+
+routes.post('/post/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    const t = await database.transaction();
+    //console.log('Entra en prod final -----------------------------------------------')
+    try {
+        await producto_final.create(req.body, {
+            transaction: t
+        }).then(response => {
+            t.commit();
+            res.json({
+                mensaje: "successfully",
+                detmensaje: "Registro almacenado satisfactoriamente",
+                authData: authData,
+                body: response
+            });
+        });
     } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
-        //console.log('Rollback')
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
     }
 })
 
-routes.put('/put/:idproducto_final', verificaToken, async (req, res) => {
-
+routes.put('/put/:idproducto_final', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     try {
-        const productos_finales = await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
+        await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
             transaction: t
+        }).then(response => {
+            t.commit();
+            res.json({
+                mensaje: "successfully",
+                detmensaje: "Registro actualizado satisfactoriamente",
+                authData: authData,
+                body: response
+            });
         });
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-
-            if (error) {
-                t.rollback();
-                res.send("Error autenticacion: ", error);
-            } else {
-                t.commit();
-                res.json({
-                    estado: "successfully",
-                    mensaje: "Registro actualizado",
-                    body: productos_finales
-                })
-            }
-        });
-
     } catch (error) {
-        res.json({ estado: 'error', mensjae: error });
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+        t.rollback();
     }
 })
 
-routes.put('/inactiva/:idproducto_final', verificaToken, async (req, res) => {
-
+routes.put('/inactiva/:idproducto_final', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     //console.log("Entra en inactiva", req.params.idproducto_final);
 
     try {
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });
-            } else {
 
-                const tcab = await database.transaction();
+        const tcab = await database.transaction();
 
-                await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
-                    transaction: tcab
-                });
-                tcab.commit();
-                const queryDet = `update producto_final set estado='IN' where idproducto_final = ${req.params.idproducto_final}`;
+        await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
+            transaction: tcab
+        });
 
-                await database.query(queryDet, {
-                    transaction: t
-                });
+        tcab.commit();
 
-                t.commit();
+        const queryDet = `update producto_final set estado='IN' where idproducto_final = ${req.params.idproducto_final}`;
 
-                res.json({
-                    estado: "successfully",
-                    mensaje: "Registro inactivado",
-                })
-            }
+        await database.query(queryDet, {
+            transaction: t
+        }, { type: QueryTypes.SELECT });
+
+        t.commit();
+        res.json({
+            mensaje: "successfully",
+            detmensaje: "Registro inactivado satisfactoriamente",
+            authData: authData,
         })
+
     } catch (error) {
         t.rollback();
-        res.json({ estado: 'error', mensjae: error });;
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
     }
 })
 
-routes.delete('/del/:idproducto_final', verificaToken, async (req, res) => {
-
+routes.delete('/del/:idproducto_final', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
 
     try {
-        const productos_finales = await producto_final.destroy({ where: { idproducto_final: req.params.idproducto_final } }, {
+        await producto_final.destroy({ where: { idproducto_final: req.params.idproducto_final } }, {
             transaction: t
         });
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: 'error', mensjae: error });;
-            } else {
-                t.commit();
-                res.json({
-                    estado: "successfully",
-                    mensaje: "Registro eliminado",
-                })
-            }
+        t.commit();
+        res.json({
+            mensaje: "successfully",
+            detmensaje: "Registro eliminado satisfactoriamente",
+            authData: authData,
         })
+
     } catch (error) {
         res.json({ estado: 'error', mensjae: error });
         t.rollback();
