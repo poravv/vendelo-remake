@@ -15,7 +15,6 @@ const detinventario = require('./servicios/detinventario');
 const venta = require('./servicios/venta');
 const detventa = require('./servicios/detventa');
 const receta = require('./servicios/receta');
-const preg_seguridad = require('./servicios/preg_seguridad');
 const config_datos_set = require('./servicios/config_datos_set');
 const factura = require('./servicios/factura')
 
@@ -33,7 +32,6 @@ rutas.use('/sisweb/api/detinventario',detinventario)
 rutas.use('/sisweb/api/venta',venta)
 rutas.use('/sisweb/api/receta',receta)
 rutas.use('/sisweb/api/detventa',detventa)
-rutas.use('/sisweb/api/pregseguridad',preg_seguridad)
 rutas.use('/sisweb/api/config_datos_set',config_datos_set)
 rutas.use('/sisweb/api/factura',factura)
 
