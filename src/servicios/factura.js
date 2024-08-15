@@ -1,6 +1,5 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const factura_cab = require("../model/model_factura_cab")
 const det_factura = require("../model/model_det_factura")
 const database = require('../database')
@@ -32,44 +31,40 @@ routes.get('/getsql/', keycloak.protect(), async (req, res) => {
 routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    try {
-        const facturas = await factura_cab.findAll({ include: [{ model: det_factura }] });
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error, });
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: facturas
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error, })
-    }
+    await factura_cab.findAll({ include: [{ model: det_factura }] }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 })
 
 routes.get('/getidventa/:idventa', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    try {
-        const facturas = await factura_cab.findOne({
-            include: [{ model: det_factura }],
-            where: { idventa: req.params.idventa, estado: 'AC' },
+    await factura_cab.findOne({
+        include: [{ model: det_factura }],
+        where: { idventa: req.params.idventa, estado: 'AC' },
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
         });
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error, });
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: facturas
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error, })
-    }
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 })
 
 routes.get('/get/:idfactura_cab', keycloak.protect(), async (req, res) => {
@@ -124,15 +119,12 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
             await tcab.commit();
             await tdet.commit();
         });
-
-        t.commit();
         res.json({
             mensaje: "successfully",
             detmensaje: "Registro almacenado satisfactoriamente",
             authData: authData,
             body: facturas
         });
-
     } catch (error) {
         await tcab.rollback();
         await tdet.rollback();

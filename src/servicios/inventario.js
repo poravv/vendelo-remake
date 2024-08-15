@@ -1,6 +1,5 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const inventario = require("../model/model_inventario")
 const sucursal = require("../model/model_sucursal")
 const producto = require("../model/model_producto")
@@ -11,246 +10,266 @@ const { QueryTypes } = require('sequelize');
 require("dotenv").config()
 
 routes.get('/getsql/', verificaToken, async (req, res) => {
-    try {
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-
-            if (error) {
-                res.json({ estado: "error", mensaje: error, })
-            } else {
-                const idsucursal = authData?.rsusuario?.idsucursal;
-                const inv_analisis = await database.query(`select * from vw_analisis_inv where idsucursal=${idsucursal}`, { type: QueryTypes.SELECT })
-                res.json({
-                    estado: "successfully",
-                    body: inv_analisis
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error, })
-    }
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    const idsucursal = authData?.rsusuario?.idsucursal;
+    await database.query(`select * from vw_analisis_inv where idsucursal=${idsucursal}`, { type: QueryTypes.SELECT })
+        .then((response) => {
+            res.json({
+                mensaje: "successfully",
+                authData: authData,
+                body: response
+            });
+        }).catch(error => {
+            res.json({
+                mensaje: "error",
+                error: error,
+                detmensaje: `Error en el servidor, ${error}`
+            });
+        });
 })
 
 routes.get('/get/', verificaToken, async (req, res) => {
-    const inventarios = await inventario.findAll({
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await inventario.findAll({
         include: [
             { model: sucursal },
             { model: producto },
             { model: detinventario },
         ]
-    })
-
-    jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-        if (error) {
-            res.json({ estado: "error", mensaje: error });
-        } else {
-            res.json({
-                estado: "successfully",
-                body: inventarios
-            })
-        }
-    })
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 });
 
 
 routes.get('/getinvsuc/', verificaToken, async (req, res) => {
-    try {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    const idsucursal = authData?.rsusuario?.idsucursal;
 
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
-                //Captura el id de la sucursal
-                const idsucursal = authData?.rsusuario?.idsucursal;
-
-                await database.query('CALL cargaInventarioCab(@a)');
-                const inventarios = await inventario.findAll({
-                    where: { idsucursal: idsucursal },
-                    include: [
-                        { model: sucursal },
-                        { model: producto },
-                        { model: detinventario },
-                    ]
-                })
-                res.json({
-                    estado: "successfully",
-                    body: inventarios
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error });
-    }
-});
-
-routes.get('/get/:idinventario', verificaToken, async (req, res) => {
-    const inventarios = await inventario.findByPk(req.params.idinventario, {
+    await database.query('CALL cargaInventarioCab(@a)');
+    await inventario.findAll({
+        where: { idsucursal: idsucursal },
         include: [
             { model: sucursal },
             { model: producto },
             { model: detinventario },
         ]
-    })
-    jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-        if (error) {
-            res.json({ estado: "error", mensaje: error });
-        } else {
-            res.json({
-                estado: "successfully",
-                body: inventarios
-            })
-        }
-    })
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
+});
+
+routes.get('/get/:idinventario', verificaToken, async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await inventario.findByPk(req.params.idinventario, {
+        include: [
+            { model: sucursal },
+            { model: producto },
+            { model: detinventario },
+        ]
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 });
 
 routes.get('/getidproducto/:idproducto', verificaToken, async (req, res) => {
-
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     try {
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
-                const idsucursal = authData?.rsusuario?.idsucursal;
-                const query = `select * from inventario where idproducto = ${req.params.idproducto} and idsucursal= ${idsucursal} and estado ='AC'`;
-                //console.log(query);
-                const inventarios = await database.query(query,
-                    {
-                        model: inventario,
-                        mapToModel: true // pass true here if you have any mapped fields
-                    });
+        const idsucursal = authData?.rsusuario?.idsucursal;
+        const query = `select * from inventario where idproducto = ${req.params.idproducto} and idsucursal= ${idsucursal} and estado ='AC'`;
+        await database.query(query,
+            {
+                model: inventario,
+                mapToModel: true // pass true here if you have any mapped fields
+            }).then((response) => {
                 res.json({
-                    estado: "successfully",
-                    body: inventarios
-                })
-            }
-        });
+                    mensaje: "successfully",
+                    authData: authData,
+                    body: response
+                });
+            }).catch(error => {
+                res.json({
+                    mensaje: "error",
+                    error: error,
+                    detmensaje: `Error en el servidor, ${error}`
+                });
+            });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error });
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
     }
 });
 
 routes.get('/getDet/', verificaToken, async (req, res) => {
-    const inventarios = await inventario.findAll({
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await inventario.findAll({
         include: [
             { model: sucursal },
             { model: producto },
             { model: detinventario },
         ]
-    })
-
-    jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-        if (error) {
-            res.json({ estado: "error", mensaje: error });
-        } else {
-            res.json({
-                estado: "successfully",
-                body: inventarios
-            })
-        }
-    })
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 });
 
 routes.post('/post/', verificaToken, async (req, res) => {
-
-    //console.log(req.body)
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     try {
-        jwt.verify(req.token, process.env.CLAVESECRETA, async (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
-                req.body.idsucursal = authData?.rsusuario?.idsucursal;
-                const inventarios = await inventario.create(req.body, { transaction: t })
-                t.commit();
-                res.json({
-                    mensaje: "Registro almacenado",
-                    body: inventarios
-                })
-            }
-        })
+        req.body.idsucursal = authData?.rsusuario?.idsucursal;
+        await inventario.create(req.body, { transaction: t }).then(response => {
+            t.commit();
+            res.json({
+                mensaje: "successfully",
+                detmensaje: "Registro almacenado satisfactoriamente",
+                authData: authData,
+                body: response
+            });
+        });
     } catch (error) {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
-        res.json({ estado: "error", mensaje: error });
     }
-
 })
 
 
 routes.put('/put/:idinventario', verificaToken, async (req, res) => {
-    //console.log(req.body)
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
 
     try {
-        const inventarios = await inventario.update(req.body, { where: { idinventario: req.params.idinventario }, transaction: t })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
+        await inventario.update(req.body, { where: { idinventario: req.params.idinventario }, transaction: t })
+            .then(response => {
                 t.commit();
                 res.json({
-                    mensaje: "Registro almacenado",
-                    body: inventarios
-                })
-            }
-        })
+                    mensaje: "successfully",
+                    detmensaje: "Registro actualizado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
-        res.json({ estado: "error", mensaje: error });
     }
-
 });
 
 routes.put('/inactiva/:idinventario', verificaToken, async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     const t1 = await database.transaction();
-    //console.log("Entra en inactiva", req.params.idinventario)
     try {
         //Query de actualizacion de cabecera
         const queryCab = `update inventario set cantidad_total = 0 where idinventario = ${req.params.idinventario}`;
-        await database.query(queryCab, {
+        await database.query(queryCab, { type: QueryTypes.UPDATE }, {
             transaction: t
         });
         //Inactivacion de detalle
         const queryDet = `update det_inventario set estado='AN' where idinventario = ${req.params.idinventario}`;
-        await database.query(queryDet, {
+        await database.query(queryDet, { type: QueryTypes.UPDATE }, {
             transaction: t1
         });
 
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
-                t.commit();
-                t1.commit();
-                res.json({
-                    estado: "successfully",
-                })
-            }
-        })
+        t.commit();
+        t1.commit();
+        res.json({
+            mensaje: "successfully",
+            detmensaje: "Registro actualizado satisfactoriamente",
+            authData: authData
+        });
     } catch (error) {
         t.rollback();
         t1.rollback();
-        res.json({ estado: "error", mensaje: error });
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
     }
 })
 
 routes.delete('/del/:idinventario', verificaToken, async (req, res) => {
     const t = await database.transaction();
-
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     try {
-        const inventarios = await inventario.destroy({ where: { idinventario: req.params.idinventario }, transaction: t })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error });
-            } else {
+        await inventario.destroy({ where: { idinventario: req.params.idinventario }, transaction: t })
+            .then(response => {
+                t.commit();
                 res.json({
-                    mensaje: "Registro eliminado",
-                    body: inventarios
-                })
-            }
-        })
+                    mensaje: "successfully",
+                    detmensaje: "Registro eliminado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error });
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
     }
 
