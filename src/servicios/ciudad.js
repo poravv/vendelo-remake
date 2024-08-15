@@ -1,6 +1,5 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const ciudad = require("../model/model_ciudad")
 const database = require('../database')
 const { QueryTypes } = require("sequelize");
