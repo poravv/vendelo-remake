@@ -2,129 +2,143 @@ const express = require('express');
 const routes = express.Router();
 const jwt = require("jsonwebtoken");
 const det_venta = require("../model/model_detventa")
-const verificaToken = require('../middleware/token_extractor')
+const { keycloak } = require('../middleware/keycloak_validate');
 const database = require('../database')
 require("dotenv").config()
 
-routes.get('/get/', verificaToken, async (req, res) => {
-    try {
-        const det_ventas = await det_venta.findAll()
-
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error })
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: det_ventas
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error })
-    }
-})
-
-routes.get('/get/:idventa', verificaToken, async (req, res) => {
-    try {
-        const det_ventas = await det_venta.findAll({ where: { idventa: req.params.idventa } }, {
-            //include:[
-            //    {model:venta},
-            //]
+routes.get('/get/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    await det_venta.findAll().then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
         });
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error })
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: det_ventas
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error })
-    }
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 })
 
-routes.get('/getDet/', verificaToken, async (req, res) => {
-    try {
-        const det_ventas = await det_venta.findAll()
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error })
-            } else {
-                res.json({
-                    estado: "successfully",
-                    body: det_ventas
-                })
-            }
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error })
-    }
+routes.get('/get/:idventa', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+
+    await det_venta.findAll({ where: { idventa: req.params.idventa } }, {
+        //include:[
+        //    {model:venta},
+        //]
+    }).then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
 })
 
-routes.post('/post/', verificaToken, async (req, res) => {
+routes.get('/getDet/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+
+    await det_venta.findAll().then((response) => {
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response
+        });
+    }).catch(error => {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    });
+})
+
+routes.post('/post/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
     try {
-        const det_ventas = await det_venta.create(req.body, {
+        await det_venta.create(req.body, {
             transaction: t
-        })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) {
-                res.json({ estado: "error", mensaje: error })
-            } else {
+        }).then(response => {
+            t.commit();
+            res.json({
+                mensaje: "successfully",
+                detmensaje: "Registro almacenado satisfactoriamente",
+                authData: authData,
+                body: response
+            });
+        });
+    } catch (error) {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+        t.rollback();
+    }
+
+})
+
+routes.put('/put/:iddet_venta', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    const t = await database.transaction();
+    try {
+        await det_venta.update(req.body, { where: { iddet_venta: req.params.iddet_venta }, transaction: t })
+            .then(response => {
                 t.commit();
                 res.json({
-                    estado: "successfully",
-                    mensaje: "Registro almacenado correctamente",
-                    body: det_ventas
-                })
-            }
-        })
+                    mensaje: "successfully",
+                    detmensaje: "Registro actualizado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
+            });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error })
-        t.rollback();
-    }
-
-})
-
-routes.put('/put/:iddet_venta', verificaToken, async (req, res) => {
-    const t = await database.transaction();
-    try {
-        const det_ventas = await det_venta.update(req.body, { where: { iddet_venta: req.params.iddet_venta }, transaction: t })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) res.json({ estado: "error", mensaje: error })
-
-            res.json({
-                estado: "successfully",
-                mensaje: "Registro actualizado correctamente",
-                body: det_ventas
-            })
-        })
-    } catch (error) {
-        res.json({ estado: "error", mensaje: error })
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
     }
 })
 
-routes.delete('/del/:iddet_venta', verificaToken, async (req, res) => {
+routes.delete('/del/:iddet_venta', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const t = await database.transaction();
 
     try {
-        const det_ventas = await det_venta.destroy({ where: { iddet_venta: req.params.iddet_venta, transaction: t } })
-        jwt.verify(req.token, process.env.CLAVESECRETA, (error, authData) => {
-            if (error) res.json({ estado: "error", mensaje: error })
-
+        await det_venta.destroy({ where: { iddet_venta: req.params.iddet_venta, transaction: t } }).then(response => {
+            t.commit();
             res.json({
-                estado: "successfully",
-                mensaje: "Registro eliminado",
-                body: det_ventas
-            })
-        })
+                mensaje: "successfully",
+                detmensaje: "Registro eliminado satisfactoriamente",
+                authData: authData,
+                body: response
+            });
+        });
     } catch (error) {
-        res.json({ estado: "error", mensaje: error })
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
         t.rollback();
     }
 })
