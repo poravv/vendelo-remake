@@ -67,7 +67,7 @@ const persona = database.define("persona",{
         type:DataTypes.DATE
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         foreignKey:true
     },
 },

@@ -10,12 +10,21 @@ const database = require('../database');
 const { keycloak } = require('../middleware/keycloak_validate');
 const comisiones = require('../model/model_comisiones');
 const vw_venta = require('../model/model_vw_venta');
+const det_venta = require('../model/model_detventa');
 require("dotenv").config()
 let fechaActual = new Date();
 
 routes.get('/getpedidos/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+
     await vw_venta.findAll({
         include: [
             { model: usuario },
@@ -42,6 +51,12 @@ routes.get('/getpedidos/', keycloak.protect(), async (req, res) => {
 routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
     await vw_venta.findAll({
         include: [
             { model: usuario },
@@ -66,10 +81,19 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
 routes.get('/getvenusu', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+    const idusuario = authData.sub;
 
-    const idusuario = authData?.rsusuario?.idusuario;
+    try {
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+
     await vw_venta.findAll({
-        where: { idusuario: idusuario, estado: 'AS' },
+        where: {
+            idusuario: idusuario
+            //, estado: 'AS' 
+        },
         include: [
             { model: usuario },
             { model: cliente },
@@ -93,9 +117,13 @@ routes.get('/getvenusu', keycloak.protect(), async (req, res) => {
 routes.get('/getvenasig', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-
-    const idusuario = authData?.rsusuario?.idusuario;
-    const ventas = await vw_venta.findAll({
+    const idusuario = authData.sub;
+    try {
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+    await vw_venta.findAll({
         where: { idusuario: idusuario, estado: 'AS' },
         include: [
             { model: usuario },
@@ -121,9 +149,14 @@ routes.get('/getvenasig', keycloak.protect(), async (req, res) => {
 routes.get('/getvenusupa', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-
-    const idusuario = authData?.rsusuario?.idusuario;
-    const ventas = await vw_venta.findAll({
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+    const idusuario = authData.sub;
+    await vw_venta.findAll({
         where: { idusuario: idusuario, estado: 'PA' },
         include: [
             { model: usuario },
@@ -145,40 +178,15 @@ routes.get('/getvenusupa', keycloak.protect(), async (req, res) => {
     });
 });
 
-/*venta o retorno*/
-routes.post('/operacionventa/:idproducto_final/:operacion/:total', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
-    try {
-        const idusuario = authData?.rsusuario?.idusuario;
-        await database.query('CALL addventainventario(' + req.params.idproducto_final + ',"' + req.params.operacion + '",' + idusuario + ',' + req.params.total + ',@a)')
-            .then(response => {
-                res.json({
-                    mensaje: "successfully",
-                    detmensaje: "Operación exitosa",
-                    authData: authData,
-                    body: response
-                });
-            });
-    } catch (error) {
-        res.json({
-            mensaje: "error",
-            error: error,
-            detmensaje: `Error en el servidor, ${error}`
-        });
-    }
-});
-
-
 routes.post('/verificaproceso/:idusuario-:tabla', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
     try {
-        await database.query(`CALL verificaProcesos(${req.params.idusuario},'${req.params.tabla}',@a)`)
+        await database.query(`CALL verificaProcesos('${req.params.idusuario}','${req.params.tabla}',@a)`)
             .then(response => {
                 res.json({
                     mensaje: "successfully",
-                    detmensaje: "Venta procesada con exito",
+                    detmensaje: "Procesado",
                     authData: authData,
                     body: response
                 });
@@ -197,7 +205,13 @@ routes.post('/verificaproceso/:idusuario-:tabla', keycloak.protect(), async (req
 routes.get('/get/:idventa', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    const ventas = await venta.findByPk(req.params.idventa, {
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+    await venta.findByPk(req.params.idventa, {
         include: [
             { model: usuario },
             { model: cliente },
@@ -221,7 +235,13 @@ routes.get('/get/:idventa', keycloak.protect(), async (req, res) => {
 routes.get('/getDet/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    const ventas = await venta.findAll({
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+    await venta.findAll({
         include: [
             { model: usuario },
             { model: cliente },
@@ -243,38 +263,74 @@ routes.get('/getDet/', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
-    //console.log(req.body);
+    try {
+        const idusuario = authData.sub;
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
+    } catch (error) {
+        console.log(error)
+    }
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
 
-        const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
-        const { comision } = req.body;
+        //const { comision } = req.body;
         //console.log(comision)
-        req.body.estado = "PA";
 
+        /*
         if (comision === "0.10") {
             req.body.estado = "PA";
         }
         if (comision === "1.00") {
             req.body.estado = "AS";
         }
+        */
 
-        req.body.fecha = strFecha;
-        req.body.fecha_upd = strFecha;
-        req.body.idusuario = authData?.rsusuario?.idusuario;
-        req.body.idusuario_insert = authData?.rsusuario?.idusuario;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
-        const ventas = await venta.create(req.body, { transaction: t })
+        let ventaCab = {};
+        let ventaDet = {};
+        const { comision, costo_envio, idcliente, iva_total, nro_comprobante, detalle, total } = req.body;
+        const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
+        ventaCab.fecha = strFecha;
+        ventaCab.total = total;
+        ventaCab.fecha_upd = strFecha;
+        ventaCab.idusuario = authData.sub;
+        ventaCab.idsucursal = authData.idsucursal;
+        ventaCab.idusuario_insert = authData.sub;
+        ventaCab.idusuario_upd = authData.sub;
+        ventaCab.idcliente = idcliente;
+        ventaCab.costo_envio = costo_envio;
+        ventaCab.iva_total = iva_total;
+        ventaCab.nro_comprobante = nro_comprobante;
+        ventaCab.estado = "PA";
+
+        console.log(ventaCab)
+        console.log(detalle)
+
+        await venta.create(ventaCab, { transaction: t }).then(async (response) => {
+            await detalle.map(async (data) => {
+                ventaDet.idventa = response.idventa;
+                ventaDet.idproducto_final = data.idproducto_final;
+                ventaDet.cantidad = data.cantidad;
+                ventaDet.estado = "AC";
+                ventaDet.descuento = data.descuento;
+                ventaDet.subtotal = data.subtotal;
+
+                await det_venta.create(ventaDet);
+
+                //operacion venta
+                await database.query('CALL addventainventario(' + data.idproducto_final + ',"procesado","' + ventaCab.idusuario + '",' + ventaCab.idsucursal + ', 0,@a)')
+            })
+        })
+
         t.commit();
-        if (req.body.estado === "AS") {
-            await comisiones.create({ idusuario: req.body.idusuario, idventa: ventas.idventa, estado: "AC" })
-        }
+        //if (req.body.estado === "AS") {
+        //  await comisiones.create({ idusuario: req.body.idusuario, idventa: ventas.idventa, estado: "AC" })
+        //}
         res.json({
-            estado: "successfully",
-            mensaje: "Registro almacenado",
-            body: ventas
+            mensaje: "successfully",
+            detmensaje: "Registro almacenado satisfactoriamente",
+            //body: ventas
         })
     } catch (error) {
         res.json({
@@ -287,14 +343,40 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 
 })
 
-routes.put('/put/:idventa', keycloak.protect(), async (req, res) => {
+/*venta o retorno*/
+routes.post('/operacionventa/:idproducto_final/:operacion/:total', keycloak.protect(), async (req, res) => {
+    
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+    try {
+        const idusuario = authData.sub;
+        const idsucursal = authData.idsucursal;
+        await database.query('CALL addventainventario(' + req.params.idproducto_final + ',"' + req.params.operacion + '","' + idusuario + '",' + idsucursal + ',' + req.params.total + ',@a)')
+            .then(response => {
+                res.json({
+                    mensaje: "successfully",
+                    detmensaje: "Operación exitosa",
+                    authData: authData,
+                    body: response
+                });
+            });
+    } catch (error) {
+        res.json({
+            mensaje: "error",
+            error: error,
+            detmensaje: `Error en el servidor, ${error}`
+        });
+    }
+});
+
+routes.put('/put/:idventa', keycloak.protect(), async (req, res) => {
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
         await venta.update(req.body, { where: { idventa: req.params.idventa }, transaction: t })
             .then(response => {
                 t.commit();
@@ -316,10 +398,10 @@ routes.put('/put/:idventa', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/inactiva/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         //Captura parametro 
         const { idventa, idusuario } = req.body;
         //Query de actualizacion de cabecera
@@ -349,20 +431,20 @@ routes.put('/inactiva/', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idventa', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await venta.destroy({ where: { idventa: req.params.idventa }, transaction: t })
-        .then(response => {
-            t.commit();
-            res.json({
-                mensaje: "successfully",
-                detmensaje: "Registro eliminado satisfactoriamente",
-                authData: authData,
-                body: response
+            .then(response => {
+                t.commit();
+                res.json({
+                    mensaje: "successfully",
+                    detmensaje: "Registro eliminado satisfactoriamente",
+                    authData: authData,
+                    body: response
+                });
             });
-        });
     } catch (error) {
         res.json({
             mensaje: "error",

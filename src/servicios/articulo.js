@@ -1,6 +1,6 @@
 const express = require('express');
 const routes = express.Router();
-const producto = require("../model/model_producto")
+const articulo = require("../model/model_articulo")
 const proveedor = require("../model/model_proveedor")
 const database = require('../database')
 const { keycloak } = require('../middleware/keycloak_validate');
@@ -10,7 +10,7 @@ let fechaActual = new Date();
 routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    await producto.findAll({ include: proveedor }).then((response) => {
+    await articulo.findAll({ include: proveedor }).then((response) => {
         res.json({
             mensaje: "successfully",
             authData: authData,
@@ -26,10 +26,10 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
 
 })
 
-routes.get('/get/:idproducto', keycloak.protect(), async (req, res) => {
+routes.get('/get/:idarticulo', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    await producto.findByPk(req.params.idproducto, { include: proveedor })
+    await articulo.findByPk(req.params.idarticulo, { include: proveedor })
         .then((response) => {
             res.json({
                 mensaje: "successfully",
@@ -46,18 +46,17 @@ routes.get('/get/:idproducto', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
-    //console.log('Entra en producto------------------------------------------')
+    //console.log('Entra en articulo------------------------------------------')
     const t = await database.transaction();
     try {
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_insert = strFecha;
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
 
-        await producto.create(req.body, {
+        await articulo.create(req.body, {
             transaction: t
         })
             .then(async response => {
@@ -81,17 +80,19 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 
 })
 
-routes.put('/put/:idproducto', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
-    //console.log(req.body)
+routes.put('/put/:idarticulo', keycloak.protect(), async (req, res) => {
+    const t = await database.transaction();
     try {
-        const t = await database.transaction();
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
+        delete req.body.proveedor;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
-        await producto.update(req.body, { where: { idproducto: req.params.idproducto }, transaction: t })
+        req.body.idusuario_upd = authData.sub;
+
+        console.log(req.params.idarticulo)
+
+        await articulo.update(req.body, { where: { idarticulo: req.params.idarticulo }, transaction: t })
             .then(response => {
                 t.commit();
                 res.json({
@@ -102,21 +103,22 @@ routes.put('/put/:idproducto', keycloak.protect(), async (req, res) => {
                 });
             });
     } catch (error) {
+        t.rollback();
         res.json({
             mensaje: "error",
             error: error,
             detmensaje: `Error en el servidor, ${error}`
         });
-        t.rollback();
+
     }
 })
 
-routes.delete('/del/:idproducto', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+routes.delete('/del/:idarticulo', keycloak.protect(), async (req, res) => {
     const t = await database.transaction();
     try {
-        await producto.destroy({ where: { idproducto: req.params.idproducto }, transaction: t })
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
+        await articulo.destroy({ where: { idarticulo: req.params.idarticulo }, transaction: t })
             .then(response => {
                 t.commit();
                 res.json({

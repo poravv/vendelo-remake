@@ -125,12 +125,12 @@ routes.put('/reset/:idusuario', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         req.body.password = md5(req.body.password);
-        const usuarios = await usuario.create(req.body, { transaction: t })
+        await usuario.create(req.body, { transaction: t })
             .then(response => {
                 t.commit();
                 res.json({
@@ -151,10 +151,10 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idusuario', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await usuario.update(req.body, { where: { idusuario: req.params.idusuario }, transaction: t })
             .then(response => {
                 t.commit();
@@ -177,10 +177,10 @@ routes.put('/put/:idusuario', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idusuario', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await usuario.destroy({ where: { idusuario: req.params.idusuario }, transaction: t })
             .then(response => {
                 t.commit();

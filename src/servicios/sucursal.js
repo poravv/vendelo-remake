@@ -67,10 +67,10 @@ routes.get('/get/:idsucursal', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await sucursal.create(req.body, { transaction: t })
             .then(response => {
                 t.commit();
@@ -92,10 +92,10 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idsucursal', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await sucursal.update(req.body, { where: { idsucursal: req.params.idsucursal }, transaction: t })
             .then(response => {
                 t.commit();
@@ -117,10 +117,10 @@ routes.put('/put/:idsucursal', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idsucursal', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await sucursal.destroy({ where: { idsucursal: req.params.idsucursal }, transaction: t })
             .then(response => {
                 t.commit();

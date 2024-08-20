@@ -36,7 +36,7 @@ const vw_venta=sequelize.define("vw_ventas",{
         allowNull:false
     },
     idusuario:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
     },
     fecha_upd:{
@@ -44,11 +44,11 @@ const vw_venta=sequelize.define("vw_ventas",{
         allowNull:false
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
     },
     idusuario_insert:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
     },
     peso_total:{
@@ -59,6 +59,9 @@ const vw_venta=sequelize.define("vw_ventas",{
     },
     sucursal:{
         type:DataTypes.STRING
+    },
+    idsucursal:{
+        type:DataTypes.INTEGER
     },
 },{
     tableName:"vw_venta",

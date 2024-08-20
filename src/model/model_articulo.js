@@ -2,8 +2,8 @@ const{DataTypes}=require("sequelize")
 const database=require("../database")
 const proveedor=require("./model_proveedor")
 
-const producto=database.define("producto",{
-    idproducto:{
+const articulo=database.define("articulo",{
+    idarticulo:{
         type:DataTypes.INTEGER,
         autoIncrement:true,
         primaryKey:true
@@ -32,7 +32,7 @@ const producto=database.define("producto",{
         type:DataTypes.DATE,
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER
+        type:DataTypes.STRING
     },
     img:{
         type:DataTypes.BLOB("long")
@@ -42,15 +42,15 @@ const producto=database.define("producto",{
         foreignKey:true
     },
 },{
-    tableName:"producto",
+    tableName:"articulo",
     timestamps:false
 })
 
-producto.hasOne(proveedor,{
+articulo.hasOne(proveedor,{
     foreignKey:"idproveedor",
     sourceKey:"idproveedor",
     primaryKey:"idproveedor"
 })
 
 
-module.exports=producto
+module.exports=articulo

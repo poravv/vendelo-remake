@@ -1,11 +1,11 @@
 const DataType = require('sequelize')
 const database = require('../database.js')
 //const producto_final=require("./model_producto_final")
-const producto=require("./model_producto")
+const articulo=require("./model_articulo")
 
 
 const receta = database.define("receta",{
-    idproducto:{
+    idarticulo:{
         type:DataType.INTEGER,
         primaryKey:true
     },
@@ -39,10 +39,10 @@ receta.hasOne(producto_final,{
 })
 */
 
-receta.hasOne(producto,{
-    foreignKey:"idproducto",
-    primaryKey:"idproducto",
-    sourceKey:"idproducto"
+receta.hasOne(articulo,{
+    foreignKey:"idarticulo",
+    primaryKey:"idarticulo",
+    sourceKey:"idarticulo"
 })
 
 module.exports=receta

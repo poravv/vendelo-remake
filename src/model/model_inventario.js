@@ -1,6 +1,6 @@
 const{DataTypes}=require("sequelize")
 const sequelize=require("../database")
-const producto=require("./model_producto")
+const articulo=require("./model_articulo")
 const sucursal=require("./model_sucursal")
 const detinventario = require("../model/model_detinventario")
 
@@ -21,7 +21,7 @@ const inventario=sequelize.define("inventario",{
         type:DataTypes.INTEGER,
         //allowNull:false
     },
-    idproducto:{
+    idarticulo:{
         type:DataTypes.INTEGER,
         //allowNull:false
     },
@@ -38,10 +38,10 @@ const inventario=sequelize.define("inventario",{
     timestamps:false
 })
 
-inventario.hasOne(producto,{
-    foreignKey:"idproducto",
-    sourceKey:"idproducto",
-    primaryKey:"idproducto",
+inventario.hasOne(articulo,{
+    foreignKey:"idarticulo",
+    sourceKey:"idarticulo",
+    primaryKey:"idarticulo",
 })
 
 inventario.hasOne(sucursal,{

@@ -28,7 +28,7 @@ const det_inventario=sequelize.define("det_inventario",{
         //allowNull:false
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         //allowNull:false
     }
 },{

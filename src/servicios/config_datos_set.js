@@ -13,7 +13,7 @@ const Op = Sequelize.Op;
 routes.get('/getsql/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    const idsucursal = authData?.rsusuario?.idsucursal;
+    const idsucursal = authData.idsucursal;;
     await database.query(`select * from vw_config_datos_set where idsucursal=${idsucursal}`, { type: QueryTypes.SELECT }).then((response) => {
         res.json({
             mensaje: "successfully",
@@ -92,16 +92,16 @@ routes.get('/get/:idconfig_datos_set', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_insert = strFecha;
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
-        req.body.idsucursal = authData?.rsusuario?.idsucursal;
+        req.body.idusuario_upd = authData.sub;
+        req.body.idsucursal = authData.idsucursal;;
         await config_datos_set.create(req.body, {
             transaction: t
         }).then(response => {
@@ -125,13 +125,14 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idconfig_datos_set', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
         await config_datos_set.update(req.body, { where: { idconfig_datos_set: req.params.idconfig_datos_set } }, {
             transaction: t
         }).then(response => {
@@ -155,10 +156,11 @@ routes.put('/put/:idconfig_datos_set', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idconfig_datos_set', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await config_datos_set.destroy({ where: { idconfig_datos_set: req.params.idconfig_datos_set } }, {
             transaction: t
         }).then(response => {

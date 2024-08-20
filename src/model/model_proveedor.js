@@ -32,7 +32,7 @@ const proveedor=database.define("proveedor",{
         type:DataTypes.DATE
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         foreignKey:true
     },
 },{

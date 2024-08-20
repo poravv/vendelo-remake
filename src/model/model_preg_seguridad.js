@@ -16,7 +16,7 @@ const preg_seguridad=sequelize.define("preg_seguridad",{
         type:DataTypes.STRING
     },
     idusuario:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         foreignKey:true
     },
 },{

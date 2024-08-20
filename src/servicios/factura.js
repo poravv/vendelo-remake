@@ -86,13 +86,14 @@ routes.get('/get/:idfactura_cab', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const tcab = await database.transaction();
     const tdet = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         //Aqui realiza la captura del ultimo numero de factura
-        const idsucursal = authData?.rsusuario?.idsucursal;
+        const idsucursal = authData.idsucursal;;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha = strFecha;
         req.body.idsucursal = idsucursal;
@@ -137,10 +138,11 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idfactura_cab', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const facturas = await factura_cab.update(req.body, { where: { idfactura_cab: req.params.idfactura_cab } }, {
             transaction: t
         });
@@ -164,10 +166,10 @@ routes.put('/put/:idfactura_cab', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idfactura_cab', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const facturas = await factura_cab.destroy({ where: { idfactura_cab: req.params.idfactura_cab } }, {
             transaction: t
         });

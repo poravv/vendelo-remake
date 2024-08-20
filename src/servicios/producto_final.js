@@ -5,7 +5,7 @@ const receta = require("../model/model_receta")
 const database = require('../database')
 const { QueryTypes } = require("sequelize")
 const { keycloak } = require('../middleware/keycloak_validate');
-const producto = require('../model/model_producto');
+const articulo = require('../model/model_articulo');
 require("dotenv").config()
 
 routes.get('/getsql/', keycloak.protect(), async (req, res) => {
@@ -31,7 +31,7 @@ routes.get('/productoventa/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
 
-    const idsucursal = authData?.rsusuario?.idsucursal;
+    const idsucursal = authData.idsucursal;;
     await database.query(`select * from vw_venta_prod_stock where estado ='AC' and idsucursal=${idsucursal} `,
         {
             model: producto_final,
@@ -60,7 +60,7 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
         include: [
             {
                 model: receta, include: [
-                    { model: producto },
+                    { model: articulo },
                 ]
             },
         ]
@@ -99,15 +99,28 @@ routes.get('/get/:idproducto_final', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
-    //console.log('Entra en prod final -----------------------------------------------')
     try {
+        const recetas = req.body.receta;
+        delete req.body.receta;
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await producto_final.create(req.body, {
             transaction: t
         }).then(response => {
             t.commit();
+            recetas.map(async (data) => {
+                let persist = {}
+                persist.idarticulo = data.idarticulo;
+                persist.idproducto_final = response.idproducto_final;
+                persist.receta_estado="AC";
+                persist.estado="AC";
+                persist.cantidad = data.cantidad;
+
+                console.log(persist)
+                await receta.create(persist);
+            })
+
             res.json({
                 mensaje: "successfully",
                 detmensaje: "Registro almacenado satisfactoriamente",
@@ -126,10 +139,10 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idproducto_final', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
             transaction: t
         }).then(response => {
@@ -152,15 +165,12 @@ routes.put('/put/:idproducto_final', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/inactiva/:idproducto_final', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     //console.log("Entra en inactiva", req.params.idproducto_final);
-
     try {
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const tcab = await database.transaction();
-
         await producto_final.update(req.body, { where: { idproducto_final: req.params.idproducto_final } }, {
             transaction: tcab
         });
@@ -191,11 +201,10 @@ routes.put('/inactiva/:idproducto_final', keycloak.protect(), async (req, res) =
 })
 
 routes.delete('/del/:idproducto_final', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
-
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await producto_final.destroy({ where: { idproducto_final: req.params.idproducto_final } }, {
             transaction: t
         });

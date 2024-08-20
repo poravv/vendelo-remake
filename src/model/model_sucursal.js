@@ -30,7 +30,7 @@ const sucursal=database.define("sucursal",{
     },
     numero: {
         type: DataTypes.INTEGER,
-        allowNull:false
+        allowNull:true
     }
 },{
     tableName:"Sucursal",

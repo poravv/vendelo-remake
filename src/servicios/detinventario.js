@@ -1,8 +1,6 @@
 const express = require('express');
 const routes = express.Router();
-const jwt = require("jsonwebtoken");
 const det_inventario = require("../model/model_detinventario")
-const inventario = require("../model/model_inventario")
 const database = require('../database')
 const { keycloak } = require('../middleware/keycloak_validate');
 const { QueryTypes } = require('sequelize');
@@ -34,7 +32,7 @@ routes.get('/getinvdetsuc/:idinventario', keycloak.protect(), async (req, res) =
     const token = req.kauth.grant.access_token;
     const authData = token.content;
 
-    const idsucursal = authData?.rsusuario?.idsucursal;
+    const idsucursal = authData.idsucursal;;
     await database.query(`select * from vw_det_inventario where idsucursal=${idsucursal} and idinventario=${req.params.idinventario}`, { type: QueryTypes.SELECT })
         .then((response) => {
             res.json({
@@ -111,15 +109,15 @@ routes.get('/get/:idinventario', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_insert = strFecha;
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
         await det_inventario.create(req.body, { transaction: t }).then(response => {
             t.commit();
             res.json({
@@ -141,10 +139,11 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:iddet_inventario', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const det_inventarios = await det_inventario.update(req.body, { where: { iddet_inventario: req.params.iddet_inventario } }, {
             transaction: t
         }).then(response => {
@@ -167,13 +166,13 @@ routes.put('/put/:iddet_inventario', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/inactiva/:iddet_inventario', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
-
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         //Captura parametro
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
         const { cantidad, idinventario, estado } = req.body;
         //Query de actualizacion de cabecera
         const query = `update inventario set cantidad_total=(cantidad_total - ${cantidad})  where idinventario = ${idinventario}`;
@@ -203,10 +202,11 @@ routes.put('/inactiva/:iddet_inventario', keycloak.protect(), async (req, res) =
 });
 
 routes.delete('/del/:iddet_inventario', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await det_inventario.destroy({ where: { iddet_inventario: req.params.iddet_inventario } }, {
             transaction: t
         }).then(response => {
@@ -226,7 +226,6 @@ routes.delete('/del/:iddet_inventario', keycloak.protect(), async (req, res) => 
         });
         t.rollback();
     }
-
 })
 
 module.exports = routes;

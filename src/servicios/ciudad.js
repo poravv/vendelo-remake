@@ -29,6 +29,9 @@ routes.get('/getsql/', keycloak.protect(), async (req, res) => {
 routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+    //Extrae id del usuario
+    const userId = authData.sub;
+    console.log('User ID:', userId);
     await ciudad.findAll().then((response) => {
         res.json({
             mensaje: "successfully",
@@ -63,10 +66,11 @@ routes.get('/get/:idciudad', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await ciudad.create(req.body, {
             transaction: t
         }).then(response => {
@@ -89,10 +93,11 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idciudad', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await ciudad.update(req.body, { where: { idciudad: req.params.idciudad } }, {
             transaction: t
         }).then(response => {
@@ -115,10 +120,11 @@ routes.put('/put/:idciudad', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idciudad', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await ciudad.destroy({ where: { idciudad: req.params.idciudad } }, {
             transaction: t
         }).then(response => {

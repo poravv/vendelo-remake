@@ -91,10 +91,11 @@ routes.get('/get/:idcomisiones', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await comisiones.create(req.body, {
             transaction: t
         }).then(response => {
@@ -117,10 +118,11 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idcomisiones', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await comisiones.update(req.body, { where: { idcomisiones: req.params.idcomisiones } }, {
             transaction: t
         }).then(response => {
@@ -143,10 +145,11 @@ routes.put('/put/:idcomisiones', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idcomisiones', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await comisiones.destroy({ where: { idcomisiones: req.params.idcomisiones } }, {
             transaction: t
         }).then(response => {

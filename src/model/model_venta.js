@@ -36,7 +36,7 @@ const venta=sequelize.define("ventas",{
         allowNull:false
     },
     idusuario:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
     },
     fecha_upd:{
@@ -44,12 +44,21 @@ const venta=sequelize.define("ventas",{
         allowNull:false
     },
     idusuario_upd:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
     },
     idusuario_insert:{
-        type:DataTypes.INTEGER,
+        type:DataTypes.STRING,
         allowNull:false
+    },
+    idsucursal:{
+        type:DataTypes.INTEGER
+    },
+    tipo_venta:{
+        type:DataTypes.STRING,
+    },
+    cuotas:{
+        type:DataTypes.INTEGER,
     },
 },{
     tableName:"Venta",

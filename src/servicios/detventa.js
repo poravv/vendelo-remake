@@ -67,10 +67,11 @@ routes.get('/getDet/', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await det_venta.create(req.body, {
             transaction: t
         }).then(response => {
@@ -90,14 +91,14 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
         });
         t.rollback();
     }
-
 })
 
 routes.put('/put/:iddet_venta', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
+    
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await det_venta.update(req.body, { where: { iddet_venta: req.params.iddet_venta }, transaction: t })
             .then(response => {
                 t.commit();
@@ -119,11 +120,10 @@ routes.put('/put/:iddet_venta', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:iddet_venta', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
-
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await det_venta.destroy({ where: { iddet_venta: req.params.iddet_venta, transaction: t } }).then(response => {
             t.commit();
             res.json({

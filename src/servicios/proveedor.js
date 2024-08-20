@@ -64,14 +64,14 @@ routes.get('/get/:idproveedor', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_insert = strFecha;
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;;
         await proveedor.create(req.body, { transaction: t }).then(response => {
             t.commit();
             res.json({
@@ -93,13 +93,13 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 })
 
 routes.put('/put/:idproveedor', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         req.body.fecha_upd = strFecha;
-        req.body.idusuario_upd = authData?.rsusuario?.idusuario;
+        req.body.idusuario_upd = authData.sub;
         await proveedor.update(req.body, { where: { idproveedor: req.params.idproveedor }, transaction: t })
             .then(response => {
                 t.commit();
@@ -121,10 +121,10 @@ routes.put('/put/:idproveedor', keycloak.protect(), async (req, res) => {
 })
 
 routes.delete('/del/:idproveedor', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await proveedor.destroy({ where: { idproveedor: req.params.idproveedor }, transaction: t })
         .then(response => {
             t.commit();

@@ -45,11 +45,11 @@ routes.get('/get/:idreceta', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     //console.log('Entra en receta-----------------------------------------------')
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await receta.create(req.body, { transaction: t })
             .then(response => {
                 t.commit();
@@ -68,14 +68,13 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
         });
         t.rollback();
     }
-
 })
 
 routes.put('/put/:idreceta', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await receta.update(req.body, { where: { idreceta: req.params.idreceta }, transaction: t })
             .then(response => {
                 t.commit();
@@ -94,14 +93,13 @@ routes.put('/put/:idreceta', keycloak.protect(), async (req, res) => {
         });
         t.rollback();
     }
-
 })
 
 routes.delete('/del/:idreceta', keycloak.protect(), async (req, res) => {
-    const token = req.kauth.grant.access_token;
-    const authData = token.content;
     const t = await database.transaction();
     try {
+        const token = req.kauth.grant.access_token;
+        const authData = token.content;
         await receta.destroy({ where: { idreceta: req.params.idreceta }, transaction: t })
             .then(response => {
                 t.commit();
