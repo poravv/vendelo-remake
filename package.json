@@ -18,7 +18,7 @@
     "nodemon": "^2.0.18",
     "sequelize": "^6.21.2"
   },
-  "name": "api-rest-sisweb",
+  "name": "api-rest-vendelo",
   "version": "1.0.0",
   "description": "Api rest proyecto",
   "main": "./src/server.js",

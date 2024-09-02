@@ -2,7 +2,7 @@ const express = require('express');
 const app = express()
 const cors = require('cors');
 const configrutas =  require('./config_rutas')
-const port = process.env.PORT||3002;
+const port = process.env.PORT||3006;
 
 const { keycloak,session } = require('./middleware/keycloak_validate');
 const { connect } = require('./conect');
@@ -35,7 +35,7 @@ app.use(configrutas)
 
 //Rutas --------------------------------
 app.get('/',(req,res)=>{
-    res.send('Api Rest Sisweb')
+    res.send('Api Rest vendelo')
 });
 
 //Server Running ----------------------

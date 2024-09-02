@@ -19,22 +19,22 @@ const config_datos_set = require('./servicios/config_datos_set');
 const factura = require('./servicios/factura')
 const pago = require('./servicios/pago')
 
-rutas.use('/sisweb/api/ciudad',ciudad);
-rutas.use('/sisweb/api/comisiones',comisiones);
-rutas.use('/sisweb/api/cliente',cliente);
-rutas.use('/sisweb/api/sucursal',sucursal);
-rutas.use('/sisweb/api/persona',persona)
-rutas.use('/sisweb/api/usuario',usuario)
-rutas.use('/sisweb/api/proveedor',proveedor)
-rutas.use('/sisweb/api/articulo',articulo)
-rutas.use('/sisweb/api/producto_final',producto_final)
-rutas.use('/sisweb/api/inventario',inventario)
-rutas.use('/sisweb/api/detinventario',detinventario)
-rutas.use('/sisweb/api/venta',venta)
-rutas.use('/sisweb/api/receta',receta)
-rutas.use('/sisweb/api/detventa',detventa)
-rutas.use('/sisweb/api/config_datos_set',config_datos_set)
-rutas.use('/sisweb/api/factura',factura)
-rutas.use('/sisweb/api/pago',pago)
+rutas.use('/vendelo/api/ciudad',ciudad);
+rutas.use('/vendelo/api/comisiones',comisiones);
+rutas.use('/vendelo/api/cliente',cliente);
+rutas.use('/vendelo/api/sucursal',sucursal);
+rutas.use('/vendelo/api/persona',persona)
+rutas.use('/vendelo/api/usuario',usuario)
+rutas.use('/vendelo/api/proveedor',proveedor)
+rutas.use('/vendelo/api/articulo',articulo)
+rutas.use('/vendelo/api/producto_final',producto_final)
+rutas.use('/vendelo/api/inventario',inventario)
+rutas.use('/vendelo/api/detinventario',detinventario)
+rutas.use('/vendelo/api/venta',venta)
+rutas.use('/vendelo/api/receta',receta)
+rutas.use('/vendelo/api/detventa',detventa)
+rutas.use('/vendelo/api/config_datos_set',config_datos_set)
+rutas.use('/vendelo/api/factura',factura)
+rutas.use('/vendelo/api/pago',pago)
 
 module.exports = rutas;

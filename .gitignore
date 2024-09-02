@@ -9,6 +9,7 @@ Thumbs.db
 # Ignorar dependencias
 node_modules
 /vendor
+/docker
 
 node_modules
 # Ignorar archivos de entorno
