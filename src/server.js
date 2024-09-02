@@ -2,7 +2,7 @@ const express = require('express');
 const app = express()
 const cors = require('cors');
 const configrutas =  require('./config_rutas')
-const port = process.env.PORT||3006;
+const port = process.env.PORT||3000;
 
 const { keycloak,session } = require('./middleware/keycloak_validate');
 const { connect } = require('./conect');
