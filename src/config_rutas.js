@@ -17,6 +17,7 @@ const detventa = require('./servicios/detventa');
 const receta = require('./servicios/receta');
 const config_datos_set = require('./servicios/config_datos_set');
 const factura = require('./servicios/factura')
+const pago = require('./servicios/pago')
 
 rutas.use('/sisweb/api/ciudad',ciudad);
 rutas.use('/sisweb/api/comisiones',comisiones);
@@ -34,5 +35,6 @@ rutas.use('/sisweb/api/receta',receta)
 rutas.use('/sisweb/api/detventa',detventa)
 rutas.use('/sisweb/api/config_datos_set',config_datos_set)
 rutas.use('/sisweb/api/factura',factura)
+rutas.use('/sisweb/api/pago',pago)
 
 module.exports = rutas;

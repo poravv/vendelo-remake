@@ -4,6 +4,7 @@ const cliente=require("./model_cliente")
 const usuario=require("./model_usuario")
 const det_venta=require("./model_detventa")
 const comisiones = require("./model_comisiones")
+const pago = require("./model_pago")
 
 const vw_venta=sequelize.define("vw_ventas",{
     idventa:{
@@ -63,6 +64,9 @@ const vw_venta=sequelize.define("vw_ventas",{
     idsucursal:{
         type:DataTypes.INTEGER
     },
+    tipo_venta:{
+        type:DataTypes.STRING
+    },
 },{
     tableName:"vw_venta",
     timestamps:false
@@ -88,6 +92,12 @@ vw_venta.hasOne(usuario,{
 })
 
 vw_venta.hasMany(det_venta,{
+    foreignKey:"idventa",
+    sourceKey:"idventa",
+    primaryKey:"idventa"
+})
+
+vw_venta.hasMany(pago,{
     foreignKey:"idventa",
     sourceKey:"idventa",
     primaryKey:"idventa"

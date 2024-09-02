@@ -11,6 +11,9 @@ const { keycloak } = require('../middleware/keycloak_validate');
 const comisiones = require('../model/model_comisiones');
 const vw_venta = require('../model/model_vw_venta');
 const det_venta = require('../model/model_detventa');
+const pago = require('../model/model_pago');
+const moment = require('moment');
+const sys_config = require('../model/model_sys_config');
 require("dotenv").config()
 let fechaActual = new Date();
 
@@ -29,6 +32,7 @@ routes.get('/getpedidos/', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ],
         where: { estado: 'PA' },
@@ -61,6 +65,7 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ],
     }).then((response) => {
@@ -97,6 +102,7 @@ routes.get('/getvenusu', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ]
     }).then((response) => {
@@ -127,6 +133,7 @@ routes.get('/getvenasig', keycloak.protect(), async (req, res) => {
         where: { idusuario: idusuario, estado: 'AS' },
         include: [
             { model: usuario },
+            { model: pago },
             { model: cliente },
             { model: detventa, include: [{ model: producto_final }] },
             { model: comisiones, where: { idusuario: idusuario } },
@@ -161,6 +168,7 @@ routes.get('/getvenusupa', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ]
     }).then((response) => {
@@ -215,6 +223,7 @@ routes.get('/get/:idventa', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ]
     }).then((response) => {
@@ -245,6 +254,7 @@ routes.get('/getDet/', keycloak.protect(), async (req, res) => {
         include: [
             { model: usuario },
             { model: cliente },
+            { model: pago },
             { model: detventa, include: [{ model: producto_final }] },
         ]
     }).then((response) => {
@@ -274,24 +284,24 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
     try {
         const token = req.kauth.grant.access_token;
         const authData = token.content;
-
         //const { comision } = req.body;
         //console.log(comision)
 
         /*
         if (comision === "0.10") {
-            req.body.estado = "PA";
+            req.body.estado = "PA"; //Pendiente de asignacion
         }
         if (comision === "1.00") {
-            req.body.estado = "AS";
+            req.body.estado = "AS"; //Asignado
         }
         */
 
         let ventaCab = {};
         let ventaDet = {};
-        const { comision, costo_envio, idcliente, iva_total, nro_comprobante, detalle, total } = req.body;
+        const { comision, costo_envio, idcliente, iva_total, nro_comprobante, detalle, total, tipo_venta, cuotas } = req.body;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
         ventaCab.fecha = strFecha;
+        ventaCab.total = total;
         ventaCab.total = total;
         ventaCab.fecha_upd = strFecha;
         ventaCab.idusuario = authData.sub;
@@ -301,11 +311,13 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
         ventaCab.idcliente = idcliente;
         ventaCab.costo_envio = costo_envio;
         ventaCab.iva_total = iva_total;
+        ventaCab.tipo_venta = tipo_venta;
         ventaCab.nro_comprobante = nro_comprobante;
-        ventaCab.estado = "PA";
+        ventaCab.cuotas = cuotas;
+        ventaCab.estado = "AC";
 
-        console.log(ventaCab)
-        console.log(detalle)
+        //console.log(ventaCab)
+        //console.log(detalle)
 
         await venta.create(ventaCab, { transaction: t }).then(async (response) => {
             await detalle.map(async (data) => {
@@ -315,11 +327,15 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
                 ventaDet.estado = "AC";
                 ventaDet.descuento = data.descuento;
                 ventaDet.subtotal = data.subtotal;
-
                 await det_venta.create(ventaDet);
-
                 //operacion venta
-                await database.query('CALL addventainventario(' + data.idproducto_final + ',"procesado","' + ventaCab.idusuario + '",' + ventaCab.idsucursal + ', 0,@a)')
+                await database.query('CALL addventainventario(' + data.idproducto_final + ',"procesado","' + ventaCab.idusuario + '",' + ventaCab.idsucursal + ', 0,@a)');
+
+                if(cuotas||tipo_venta=='CR'){
+                    const fechaInicio = new Date();
+                    crearPagos(total, cuotas, fechaInicio, response.idventa);
+                }
+
             })
         })
 
@@ -343,9 +359,41 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 
 })
 
+async function crearPagos(montoTotal, cuotas, fechaInicio, idventa) {
+
+    const montoPorCuota = montoTotal / cuotas;
+    
+    /*
+    const mora = await sys_config.findOne({
+        where: { descripcion: 'mora' }
+    })
+    */
+
+    for (let i = 1; i <= cuotas; i++) {
+
+        let fechaVencimiento = moment   (fechaInicio).add(i, 'months').toDate();
+
+        let nuevoPago = {
+            cuota: i,
+            vencimiento: fechaVencimiento,
+            idventa: idventa,
+            monto_pago: montoPorCuota,
+            estado:'PP'
+            // otros campos necesarios para el pago
+        };
+
+        //console.log('--------------->')
+        //console.log(nuevoPago);
+        
+        await pago.create(nuevoPago);
+
+        console.log(`Pago ${i} creado con fecha de vencimiento: ${fechaVencimiento}`);
+    }
+}
+
 /*venta o retorno*/
 routes.post('/operacionventa/:idproducto_final/:operacion/:total', keycloak.protect(), async (req, res) => {
-    
+
     const token = req.kauth.grant.access_token;
     const authData = token.content;
     try {
