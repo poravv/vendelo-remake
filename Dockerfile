@@ -8,6 +8,6 @@ RUN npm install --legacy-peer-dependencies
 
 COPY . .
 
-EXPOSE 3006
+EXPOSE 3000
 
 CMD ["npm","run", "start"]
