@@ -9,7 +9,8 @@ Thumbs.db
 # Ignorar dependencias
 node_modules
 /vendor
-/docker
+docker-compose-back-vendelo.yml
+docker-compose-back.yml
 
 node_modules
 # Ignorar archivos de entorno
