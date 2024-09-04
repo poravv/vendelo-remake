@@ -11,6 +11,7 @@ node_modules
 /vendor
 docker-compose-back-vendelo.yml
 docker-compose-back.yml
+docker-compose-dolce.yml
 
 node_modules
 # Ignorar archivos de entorno
