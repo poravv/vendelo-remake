@@ -55,8 +55,8 @@ routes.get('/getpedidos/', keycloak.protect(), async (req, res) => {
 routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
+    const idusuario = authData.sub;
     try {
-        const idusuario = authData.sub;
         await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
     } catch (error) {
         console.log(error)
@@ -273,8 +273,10 @@ routes.get('/getDet/', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post/', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
+    const idusuario = authData.sub;
     try {
-        const idusuario = authData.sub;
         await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
     } catch (error) {
         console.log(error)
@@ -282,8 +284,6 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 
     const t = await database.transaction();
     try {
-        const token = req.kauth.grant.access_token;
-        const authData = token.content;
         //const { comision } = req.body;
         //console.log(comision)
 
@@ -295,11 +295,17 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
             req.body.estado = "AS"; //Asignado
         }
         */
-
         let ventaCab = {};
         let ventaDet = {};
-        const { comision, costo_envio, idcliente, iva_total, nro_comprobante, detalle, total, tipo_venta, cuotas } = req.body;
+        const { comision, costo_envio, idcliente, iva_total, nro_comprobante, detalle, total, tipo_venta, cuotas, retiro } = req.body;
         const strFecha = fechaActual.getFullYear() + "-" + (fechaActual.getMonth() + 1) + "-" + fechaActual.getDate();
+        
+        if (tipo_venta == "CO") {
+            ventaCab.estado = "PR";
+        } else {
+            ventaCab.estado = "PE";
+        }
+
         ventaCab.fecha = strFecha;
         ventaCab.total = total;
         ventaCab.total = total;
@@ -314,7 +320,8 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
         ventaCab.tipo_venta = tipo_venta;
         ventaCab.nro_comprobante = nro_comprobante;
         ventaCab.cuotas = cuotas;
-        ventaCab.estado = "AC";
+        ventaCab.retiro = retiro;
+
 
         //console.log(ventaCab)
         //console.log(detalle)
@@ -331,7 +338,7 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
                 //operacion venta
                 await database.query('CALL addventainventario(' + data.idproducto_final + ',"procesado","' + ventaCab.idusuario + '",' + ventaCab.idsucursal + ', 0,@a)');
 
-                if(cuotas||tipo_venta=='CR'){
+                if (cuotas || tipo_venta == 'CR') {
                     const fechaInicio = new Date();
                     crearPagos(total, cuotas, fechaInicio, response.idventa);
                 }
@@ -362,7 +369,7 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
 async function crearPagos(montoTotal, cuotas, fechaInicio, idventa) {
 
     const montoPorCuota = montoTotal / cuotas;
-    
+
     /*
     const mora = await sys_config.findOne({
         where: { descripcion: 'mora' }
@@ -371,20 +378,20 @@ async function crearPagos(montoTotal, cuotas, fechaInicio, idventa) {
 
     for (let i = 1; i <= cuotas; i++) {
 
-        let fechaVencimiento = moment   (fechaInicio).add(i, 'months').toDate();
+        let fechaVencimiento = moment(fechaInicio).add(i, 'months').toDate();
 
         let nuevoPago = {
             cuota: i,
             vencimiento: fechaVencimiento,
             idventa: idventa,
             monto_pago: montoPorCuota,
-            estado:'PP'
+            estado: 'PP'
             // otros campos necesarios para el pago
         };
 
         //console.log('--------------->')
         //console.log(nuevoPago);
-        
+
         await pago.create(nuevoPago);
 
         console.log(`Pago ${i} creado con fecha de vencimiento: ${fechaVencimiento}`);

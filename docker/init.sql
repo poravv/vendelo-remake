@@ -563,6 +563,7 @@ CREATE TABLE `venta` (
   `idsucursal` int DEFAULT NULL,
   `tipo_venta` varchar(2) DEFAULT NULL,
   `cuotas` int DEFAULT NULL,
+  `retiro` varchar(15) DEFAULT NULL,
   PRIMARY KEY (`idventa`)
 ) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb3;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -683,6 +684,7 @@ select
     v.total,
     v.estado,
     v.costo_envio,
+    v.retiro,
     v.fecha_upd,
     v.idusuario_upd,
     v.idusuario_insert,

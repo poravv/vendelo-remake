@@ -6,7 +6,7 @@ const det_venta=require("./model_detventa")
 const comisiones = require("./model_comisiones")
 const pago = require("./model_pago")
 
-const vw_venta=sequelize.define("vw_ventas",{
+const vw_venta=sequelize.define("vw_venta",{
     idventa:{
         type:DataTypes.INTEGER,
         autoIncrement:true,
@@ -66,6 +66,12 @@ const vw_venta=sequelize.define("vw_ventas",{
     },
     tipo_venta:{
         type:DataTypes.STRING
+    },
+    costo_envio:{
+        type:DataTypes.DECIMAL(13.2),
+    },
+    retiro:{
+        type:DataTypes.STRING,
     },
 },{
     tableName:"vw_venta",

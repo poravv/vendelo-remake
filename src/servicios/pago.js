@@ -7,7 +7,8 @@ let fechaActual = new Date();
 require("dotenv").config()
 const Sequelize = require('sequelize');
 const Venta = require('../model/model_venta');
-const clientes = require('../model/model_cliente');
+const cliente = require('../model/model_cliente');
+const pago = require('../model/model_pago');
 const Op = Sequelize.Op;
 
 routes.get('/getdeuda/:idventa', keycloak.protect(), async (req, res) => {
@@ -76,75 +77,61 @@ routes.get('/get/:idpago', keycloak.protect(), async (req, res) => {
 })
 
 routes.post('/post', keycloak.protect(), async (req, res) => {
+    const token = req.kauth.grant.access_token;
+    const authData = token.content;
     const pagos = req.body.pagos;
 
     if (!Array.isArray(pagos) || pagos.length === 0) {
         return res.status(400).send('El cuerpo de la solicitud debe contener un array de pagos');
     }
 
-    const t = await database.transaction();
     try {
-        let ticket = {}
-        let arrayPagos = []
-        const token = req.kauth.grant.access_token;
-        const authData = token.content;
-        const fechaActual = new Date();
-        const strFecha = `${fechaActual.getFullYear()}-${fechaActual.getMonth() + 1}-${fechaActual.getDate()}`;
+        const ticket = {};
+        const arrayPagos = [];
+        const { sub: idusuario_upd } = req.kauth.grant.access_token.content;
+        const strFecha = new Date().toISOString().split('T')[0];
 
         for (const pago of pagos) {
             pago.fecha_pago = strFecha;
-            pago.idusuario_upd = authData.sub;
+            pago.idusuario_upd = idusuario_upd;
 
-            // Obtener el monto a pagar y el monto pagado
             const deuda = await Pago.findOne({ where: { idpago: pago.idpago } });
             const montoAPagar = (deuda.monto_pago ?? 0) - (deuda.pagado ?? 0);
 
-            //console.log('----->',deuda.idventa)
+            pago.idventa = deuda.idventa;
+            pago.vencimiento = deuda.vencimiento;
+            pago.cuota = deuda.cuota;
+            pago.monto_pago = deuda.monto_pago;
 
-            // Actualizar el estado basado en el monto pagado
             if (pago.pagado >= montoAPagar) {
-                pago.idventa = deuda.idventa;
-                pago.vencimiento = deuda.vencimiento;
-                pago.cuota = deuda.cuota;
                 pago.estado = 'PA';
-                pago.monto_pago = deuda.monto_pago
                 pago.pagado = deuda.monto_pago;
             } else {
-                pago.idventa = deuda.idventa;
-                pago.vencimiento = deuda.vencimiento;
-                pago.cuota = deuda.cuota;
                 pago.estado = 'PAR';
-                pago.monto_pago = deuda.monto_pago
                 pago.pagado = Number(pago.pagado ?? 0) + Number(deuda.pagado ?? 0);
-                //console.log('----->', pago.pagado)
             }
 
             arrayPagos.push(pago);
 
             await Pago.update(pago, {
-                where: { idpago: pago.idpago },
-                transaction: t
-            });
+                where: { idpago: pago.idpago }});
         }
-
-        //console.log(arrayPagos)
-
+        
         const venta = await Venta.findOne({
             include: [
-                { model: clientes },
+                { model: cliente },
+                { model: pago },
             ],
             where: { idventa: arrayPagos[0].idventa }
-        })
+        });
 
-        console.log(venta);
+        //Aqui se verifica si es que aun existen pendientes de pago
+        if (!venta.pagos.some(pago => pago.estado === "PP")) {
+            await Venta.update({ estado: "PR" }, { where: { idventa: arrayPagos[0].idventa } });
+        }
 
         ticket.venta = venta;
         ticket.pagos = arrayPagos;
-
-        await t.commit();
-
-        //const deuda = await Pago.findOne({ where: { idpago: pago.idpago } });
-
 
         res.json({
             mensaje: "successfully",
@@ -152,12 +139,12 @@ routes.post('/post', keycloak.protect(), async (req, res) => {
             authData: authData,
             body: ticket
         });
+
     } catch (error) {
-        await t.rollback();
-        res.json({
+        res.status(500).json({
             mensaje: "error",
-            error: error,
-            detmensaje: `Error en el servidor, ${error}`
+            error: error.message,
+            detmensaje: `Error en el servidor, ${error.message}`
         });
     }
 
