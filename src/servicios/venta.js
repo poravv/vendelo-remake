@@ -276,11 +276,14 @@ routes.post('/post/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
     const idusuario = authData.sub;
+    //Comentado pq no descuenta el inventario 
+    /*
     try {
         await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
     } catch (error) {
         console.log(error)
     }
+    */
 
     const t = await database.transaction();
     try {
