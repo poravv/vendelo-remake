@@ -64,6 +64,9 @@ const venta=sequelize.define("venta",{
     retiro:{
         type:DataTypes.STRING,
     },
+    costo_envio:{
+        type:DataTypes.DECIMAL(13.2),
+    },
 },{
     tableName:"Venta",
     timestamps:false
