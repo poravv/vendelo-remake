@@ -59,12 +59,56 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
 routes.get('/getinvsuc/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
-    const idsucursal = authData.idsucursal;;
+    const idsucursal = authData.idsucursal;
 
-    console.log(idsucursal)
+    console.log(idsucursal);
+
+    // Obtener los parámetros de paginación de la solicitud
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const offset = (page - 1) * limit;
 
     try {
+        // Ejecutar el procedimiento almacenado
         await database.query('CALL cargaInventarioCab(@a)');
+
+        let response;
+        if (!page || !limit) {
+            // Si no se especifican page y limit, obtener todos los registros
+            response = await inventario.findAll({
+                where: { idsucursal: idsucursal },
+                include: [
+                    { model: sucursal },
+                    { model: articulo },
+                    { model: detinventario }
+                ]
+            });
+        } else {
+            // Realizar la consulta con paginación
+            response = await inventario.findAndCountAll({
+                where: { idsucursal: idsucursal },
+                include: [
+                    { model: sucursal },
+                    { model: articulo },
+                    { model: detinventario }
+                ],
+                limit: limit,
+                offset: offset
+            });
+        }
+
+        // Responder con datos y paginación si corresponde
+        res.json({
+            mensaje: "successfully",
+            authData: authData,
+            body: response.rows || response,
+            pagination: response.count ? {
+                totalItems: response.count,
+                totalPages: Math.ceil(response.count / limit),
+                currentPage: page,
+                pageSize: limit
+            } : undefined
+        });
     } catch (error) {
         res.json({
             mensaje: "error",
@@ -72,28 +116,8 @@ routes.get('/getinvsuc/', keycloak.protect(), async (req, res) => {
             detmensaje: `Error en el servidor, ${error}`
         });
     }
-
-    await inventario.findAll({
-        where: { idsucursal: idsucursal },
-        include: [
-            { model: sucursal },
-            { model: articulo },
-            { model: detinventario },
-        ]
-    }).then((response) => {
-        res.json({
-            mensaje: "successfully",
-            authData: authData,
-            body: response
-        });
-    }).catch(error => {
-        res.json({
-            mensaje: "error",
-            error: error,
-            detmensaje: `Error en el servidor, ${error}`
-        });
-    });
 });
+
 
 routes.get('/get/:idinventario', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;

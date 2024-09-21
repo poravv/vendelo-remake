@@ -56,28 +56,58 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
 
-    await producto_final.findAll({
-        include: [
-            {
-                model: receta, include: [
-                    { model: articulo },
+    // Obtener los parámetros de paginación de la solicitud
+    const page = parseInt(req.query.page);
+    const limit = parseInt(req.query.limit);
+    const offset = (page - 1) * limit;
+
+    try {
+        let response;
+        if (!page || !limit) {
+            // Si no se especifican page y limit, obtener todos los registros
+            response = await producto_final.findAll({
+                include: [
+                    {
+                        model: receta,
+                        include: [{ model: articulo }]
+                    },
                 ]
-            },
-        ]
-    }).then((response) => {
+            });
+        } else {
+            // Realizar la consulta con paginación
+            response = await producto_final.findAndCountAll({
+                include: [
+                    {
+                        model: receta,
+                        include: [{ model: articulo }]
+                    },
+                ],
+                limit: limit,
+                offset: offset
+            });
+        }
+
+        // Responder con datos y paginación si corresponde
         res.json({
             mensaje: "successfully",
             authData: authData,
-            body: response
+            body: response.rows || response,
+            pagination: response.count ? {
+                totalItems: response.count,
+                totalPages: Math.ceil(response.count / limit),
+                currentPage: page,
+                pageSize: limit
+            } : undefined
         });
-    }).catch(error => {
+    } catch (error) {
         res.json({
             mensaje: "error",
             error: error,
             detmensaje: `Error en el servidor, ${error}`
         });
-    });
-})
+    }
+});
+
 
 routes.get('/get/:idproducto_final', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
