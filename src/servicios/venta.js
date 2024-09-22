@@ -56,69 +56,101 @@ routes.get('/get/', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
     const idusuario = authData.sub;
+
+    // Obtener los parámetros de paginación de la solicitud
+    const page = parseInt(req.query.page) || 1; // Página actual, por defecto 1
+    const limit = parseInt(req.query.limit) || 10; // Límite de resultados por página, por defecto 10
+    const offset = (page - 1) * limit;
+
     try {
-        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
-    } catch (error) {
-        console.log(error)
-    }
-    await vw_venta.findAll({
-        include: [
-            { model: usuario },
-            { model: cliente },
-            { model: pago },
-            { model: detventa, include: [{ model: producto_final }] },
-        ],
-    }).then((response) => {
+        // Llamar al procedimiento almacenado
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`);
+
+        // Obtener los datos con paginación
+        const response = await vw_venta.findAndCountAll({
+            include: [
+                { model: usuario },
+                { model: cliente },
+                { model: pago },
+                { model: detventa, include: [{ model: producto_final }] },
+            ],
+            limit: limit, // Límite de resultados
+            offset: offset // Desplazamiento para la paginación
+        });
+
+        // Responder con los datos paginados
         res.json({
             mensaje: "successfully",
             authData: authData,
-            body: response
+            body: response.rows, // Los registros obtenidos
+            pagination: {
+                totalItems: response.count, // Total de registros
+                totalPages: Math.ceil(response.count / limit), // Total de páginas
+                currentPage: page, // Página actual
+                pageSize: limit // Tamaño de la página
+            }
         });
-    }).catch(error => {
+    } catch (error) {
         res.json({
             mensaje: "error",
             error: error,
             detmensaje: `Error en el servidor, ${error}`
         });
-    });
+    }
 });
+
 
 routes.get('/getvenusu', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
     const authData = token.content;
     const idusuario = authData.sub;
 
-    try {
-        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`)
-    } catch (error) {
-        console.log(error)
-    }
+    // Obtener los parámetros de paginación de la solicitud
+    const page = parseInt(req.query.page) || 1; // Página actual, por defecto 1
+    const limit = parseInt(req.query.limit) || 10; // Límite de resultados por página, por defecto 10
+    const offset = (page - 1) * limit;
 
-    await vw_venta.findAll({
-        where: {
-            idusuario: idusuario
-            //, estado: 'AS' 
-        },
-        include: [
-            { model: usuario },
-            { model: cliente },
-            { model: pago },
-            { model: detventa, include: [{ model: producto_final }] },
-        ]
-    }).then((response) => {
+    try {
+        // Llamar al procedimiento almacenado
+        await database.query(`CALL verificaProcesos('${idusuario}','inventario',@a)`);
+
+        // Obtener los datos con paginación
+        const response = await vw_venta.findAndCountAll({
+            where: {
+                idusuario: idusuario
+                // , estado: 'AS' // Puedes descomentar esta línea si es necesario
+            },
+            include: [
+                { model: usuario },
+                { model: cliente },
+                { model: pago },
+                { model: detventa, include: [{ model: producto_final }] },
+            ],
+            limit: limit, // Límite de resultados
+            offset: offset // Desplazamiento para la paginación
+        });
+
+        // Responder con los datos paginados
         res.json({
             mensaje: "successfully",
             authData: authData,
-            body: response
+            body: response.rows, // Los registros obtenidos
+            pagination: {
+                totalItems: response.count, // Total de registros
+                totalPages: Math.ceil(response.count / limit), // Total de páginas
+                currentPage: page, // Página actual
+                pageSize: limit // Tamaño de la página
+            }
         });
-    }).catch(error => {
+    } catch (error) {
         res.json({
             mensaje: "error",
             error: error,
             detmensaje: `Error en el servidor, ${error}`
         });
-    });
+    }
 });
+
 
 routes.get('/getvenasig', keycloak.protect(), async (req, res) => {
     const token = req.kauth.grant.access_token;
