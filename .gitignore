@@ -13,6 +13,7 @@ docker-compose-back-vendelo.yml
 docker-compose-back.yml
 docker-compose-dolce.yml
 docker-compose-dolce-back.yml
+docker-compose-lomeat.yml
 
 node_modules
 # Ignorar archivos de entorno
